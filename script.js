@@ -157,21 +157,65 @@ async function searchPokemon() {
             }
             const mapData = await mapResponse.text();
 
-            let foundInMap = false;
-            const lines = mapData.split("\n");
+            // Parse the map data to extract encounters
+            const grassEncounters = [];
+            const waterEncounters = [];
+            let parsingGrass = false;
+            let parsingWater = false;
 
-            lines.forEach((line, idx) => {
-                if (line.includes(searchTerm)) {
-                    if (!foundInMap) {
-                        resultArea.innerHTML += `<h3>Map: ${mapName.replace(".asm", "")}</h3>`;
-                        foundInMap = true;
-                        foundAny = true;
+            const lines = mapData.split("\n");
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.includes("def_grass_wildmons")) {
+                    parsingGrass = true;
+                    parsingWater = false;
+                } else if (line.includes("def_water_wildmons")) {
+                    parsingGrass = false;
+                    parsingWater = true;
+                } else if (line.includes("end_grass_wildmons") || line.includes("end_water_wildmons")) {
+                    parsingGrass = false;
+                    parsingWater = false;
+                } else if (line.startsWith("db") && (parsingGrass || parsingWater)) {
+                    const parts = line.split(",");
+                    const level = parts[0].split(" ")[1].trim();
+                    const pokemon = parts[1].split(";")[0].trim().toUpperCase();
+
+                    if (parsingGrass) {
+                        grassEncounters.push({ level, pokemon });
+                    } else if (parsingWater) {
+                        waterEncounters.push({ level, pokemon });
                     }
-                    const encounterRate = calculateEncounterRate(idx + 1);
-                    const percentage = calculatePercentage(encounterRate);
-                    resultArea.innerHTML += `<p>${line.trim()} (Rate: ${percentage.toFixed(2)}%)</p>`;
                 }
             });
+
+            // Now search through the encounters
+            const matchingGrassEncounters = grassEncounters.filter((encounter) => encounter.pokemon === searchTerm);
+            const matchingWaterEncounters = waterEncounters.filter((encounter) => encounter.pokemon === searchTerm);
+
+            if (matchingGrassEncounters.length > 0 || matchingWaterEncounters.length > 0) {
+                resultArea.innerHTML += `<h3>Map: ${mapName.replace(".asm", "")}</h3>`;
+                foundAny = true;
+
+                if (matchingGrassEncounters.length > 0) {
+                    resultArea.innerHTML += `<h4>Grass Encounters</h4>`;
+                    matchingGrassEncounters.forEach((encounter) => {
+                        const encounterIndex = grassEncounters.indexOf(encounter);
+                        const encounterRate = calculateEncounterRate(encounterIndex + 1);
+                        const percentage = calculatePercentage(encounterRate);
+                        resultArea.innerHTML += `<p>Level ${encounter.level} - ${encounter.pokemon} (${percentage.toFixed(2)}%)</p>`;
+                    });
+                }
+
+                if (matchingWaterEncounters.length > 0) {
+                    resultArea.innerHTML += `<h4>Water Encounters</h4>`;
+                    matchingWaterEncounters.forEach((encounter) => {
+                        const encounterIndex = waterEncounters.indexOf(encounter);
+                        const encounterRate = calculateEncounterRate(encounterIndex + 1);
+                        const percentage = calculatePercentage(encounterRate);
+                        resultArea.innerHTML += `<p>Level ${encounter.level} - ${encounter.pokemon} (${percentage.toFixed(2)}%)</p>`;
+                    });
+                }
+            }
         }
 
         if (!foundAny) {
@@ -182,6 +226,7 @@ async function searchPokemon() {
         alert("Failed to search. Please check console for details.");
     }
 }
+
 
 // Ensure DOM elements are ready before executing script
 window.onload = function() {
