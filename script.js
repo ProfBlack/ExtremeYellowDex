@@ -79,7 +79,7 @@ function parseMapData(mapName, mapData) {
     let parsingWater = false;
 
     const lines = mapData.split("\n");
-    lines.forEach(line => {
+    lines.forEach((line, lineNumber) => {
         line = line.trim();
         if (line.includes("def_grass_wildmons")) {
             parsingGrass = true;
@@ -90,15 +90,22 @@ function parseMapData(mapName, mapData) {
         } else if (line.includes("end_grass_wildmons") || line.includes("end_water_wildmons")) {
             parsingGrass = false;
             parsingWater = false;
-        } else if (line.startsWith("db") && (parsingGrass || parsingWater)) {
-            const parts = line.split(",");
-            
-            // Extract the level using a regular expression
-            const levelMatch = parts[0].match(/\d+/);
-            const level = levelMatch ? levelMatch[0].trim() : null;
+        } else if (line.startsWith("db") && (parsingGrass || parsingWater) && line.length > 2) {
+            // Remove 'db' and trim
+            let encounterData = line.replace('db', '').trim();
 
-            // Ensure parts[1] exists before accessing it
+            // Split by comma or any amount of whitespace
+            let parts = encounterData.split(/[, ]+/);
+
+            // Debugging: Log the line and parts
+            console.log(`Parsing line ${lineNumber + 1}: "${line}"`);
+            console.log(`Parts:`, parts);
+
+            const level = parts[0] ? parts[0].trim() : null;
             const pokemon = parts[1] ? parts[1].split(";")[0].trim().toUpperCase() : null;
+
+            // Additional Debugging: Log extracted level and pokemon
+            console.log(`Extracted level: ${level}, pokemon: ${pokemon}`);
 
             if (level && pokemon) {
                 if (parsingGrass) {
@@ -106,6 +113,8 @@ function parseMapData(mapName, mapData) {
                 } else if (parsingWater) {
                     waterEncounters.push({ level, pokemon });
                 }
+            } else {
+                console.warn(`Failed to parse line ${lineNumber + 1}: "${line}"`);
             }
         }
     });
@@ -171,7 +180,7 @@ async function searchPokemon() {
             let parsingWater = false;
 
             const lines = mapData.split("\n");
-            lines.forEach(line => {
+            lines.forEach((line, lineNumber) => {
                 line = line.trim();
                 if (line.includes("def_grass_wildmons")) {
                     parsingGrass = true;
@@ -182,11 +191,22 @@ async function searchPokemon() {
                 } else if (line.includes("end_grass_wildmons") || line.includes("end_water_wildmons")) {
                     parsingGrass = false;
                     parsingWater = false;
-                } else if (line.startsWith("db") && (parsingGrass || parsingWater)) {
-                    const parts = line.split(",");
-                    const levelMatch = parts[0].match(/\d+/);
-                    const level = levelMatch ? levelMatch[0].trim() : null;
+                } else if (line.startsWith("db") && (parsingGrass || parsingWater) && line.length > 2) {
+                    // Remove 'db' and trim
+                    let encounterData = line.replace('db', '').trim();
+
+                    // Split by comma or any amount of whitespace
+                    let parts = encounterData.split(/[, ]+/);
+
+                    // Debugging: Log the line and parts
+                    console.log(`Parsing line ${lineNumber + 1} in ${mapName}: "${line}"`);
+                    console.log(`Parts:`, parts);
+
+                    const level = parts[0] ? parts[0].trim() : null;
                     const pokemon = parts[1] ? parts[1].split(";")[0].trim().toUpperCase() : null;
+
+                    // Additional Debugging: Log extracted level and pokemon
+                    console.log(`Extracted level: ${level}, pokemon: ${pokemon}`);
 
                     if (level && pokemon) {
                         if (parsingGrass) {
@@ -194,6 +214,8 @@ async function searchPokemon() {
                         } else if (parsingWater) {
                             waterEncounters.push({ level, pokemon });
                         }
+                    } else {
+                        console.warn(`Failed to parse line ${lineNumber + 1} in ${mapName}: "${line}"`);
                     }
                 }
             });
