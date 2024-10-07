@@ -4,37 +4,60 @@ let mapData = {};        // Holds the parsed data for each map
 
 // Function to fetch the list of map files from GitHub and populate the dropdown
 async function loadMapList() {
-    const response = await fetch(baseUrl);
-    const text = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
+    console.log("Fetching map list from GitHub...");
+    try {
+        const response = await fetch(baseUrl);
+        const text = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
 
-    const links = [...doc.querySelectorAll('a')];
-    links.forEach(link => {
-        const fileName = link.textContent.trim();
-        if (fileName.endsWith('.asm')) {
-            asmFileList.push(fileName);
+        const links = [...doc.querySelectorAll('a')];
+        console.log("Links fetched:", links);
+
+        links.forEach(link => {
+            const fileName = link.textContent.trim();
+            console.log("Processing file:", fileName);
+            if (fileName.endsWith('.asm')) {
+                asmFileList.push(fileName);
+            }
+        });
+
+        if (asmFileList.length === 0) {
+            console.error("No .asm files found!");
+        } else {
+            console.log("ASM files found:", asmFileList);
         }
-    });
 
-    const mapSelect = document.getElementById('mapSelect');
-    asmFileList.forEach(file => {
-        const option = document.createElement('option');
-        option.value = file;
-        option.textContent = file.replace('.asm', '');
-        mapSelect.appendChild(option);
-    });
+        const mapSelect = document.getElementById('mapSelect');
+        asmFileList.forEach(file => {
+            const option = document.createElement('option');
+            option.value = file;
+            option.textContent = file.replace('.asm', '');
+            mapSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error("Error fetching map list:", error);
+    }
 }
 
 // Function to fetch and parse an individual .asm file
 async function fetchMapData(mapFileName) {
-    const response = await fetch(baseUrl + mapFileName);
-    const fileText = await response.text();
-    return parseAsmFile(fileText);
+    console.log("Fetching map data for:", mapFileName);
+    try {
+        const response = await fetch(baseUrl + mapFileName);
+        const fileText = await response.text();
+        console.log(`File content for ${mapFileName}:`, fileText);
+        return parseAsmFile(fileText);
+    } catch (error) {
+        console.error("Error fetching map file:", mapFileName, error);
+        return { grass: [], water: [] };  // Return empty encounters on error
+    }
 }
 
 // Parse the .asm file and extract encounter data (grass and water)
 function parseAsmFile(fileContent) {
+    console.log("Parsing ASM file...");
     const encounterData = { grass: [], water: [] };
     const lines = fileContent.split('\n');
     let parsingGrass = false;
@@ -44,9 +67,11 @@ function parseAsmFile(fileContent) {
         line = line.trim();
 
         if (line.includes('def_grass_wildmons')) {
+            console.log("Found grass encounters...");
             parsingGrass = true;
             parsingWater = false;
         } else if (line.includes('def_water_wildmons')) {
+            console.log("Found water encounters...");
             parsingGrass = false;
             parsingWater = true;
         } else if (line.includes('end_grass_wildmons') || line.includes('end_water_wildmons')) {
@@ -65,6 +90,7 @@ function parseAsmFile(fileContent) {
         }
     });
 
+    console.log("Parsed encounter data:", encounterData);
     return encounterData;
 }
 
@@ -85,6 +111,7 @@ async function loadMap() {
 
     const resultDiv = document.getElementById('result');
     resultDiv.textContent = `Loading ${selectedMap}...`;
+    console.log(`Selected map: ${selectedMap}`);
 
     const mapFileName = selectedMap;
     const encounterData = await fetchMapData(mapFileName);
@@ -111,7 +138,9 @@ async function loadMap() {
         resultDiv.textContent += 'No water encounters found.\n';
     }
 
+    // Store parsed data for the map
     mapData[selectedMap] = { grassEncounters, waterEncounters };
+    console.log(`Data for ${selectedMap} loaded successfully.`);
 }
 
 // Search for Pokémon across all loaded maps
@@ -120,6 +149,8 @@ function searchPokemon() {
     const resultDiv = document.getElementById('result');
     resultDiv.textContent = '';
 
+    console.log(`Searching for Pokémon: ${searchInput}`);
+    
     let foundAny = false;
 
     asmFileList.forEach(mapFile => {
