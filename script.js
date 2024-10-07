@@ -92,13 +92,20 @@ function parseMapData(mapName, mapData) {
             parsingWater = false;
         } else if (line.startsWith("db") && (parsingGrass || parsingWater)) {
             const parts = line.split(",");
-            const level = parts[0].split(" ")[1].trim();
-            const pokemon = parts[1].split(";")[0].trim();
+            
+            // Extract the level using a regular expression
+            const levelMatch = parts[0].match(/\d+/);
+            const level = levelMatch ? levelMatch[0].trim() : null;
 
-            if (parsingGrass) {
-                grassEncounters.push({ level, pokemon });
-            } else if (parsingWater) {
-                waterEncounters.push({ level, pokemon });
+            // Ensure parts[1] exists before accessing it
+            const pokemon = parts[1] ? parts[1].split(";")[0].trim().toUpperCase() : null;
+
+            if (level && pokemon) {
+                if (parsingGrass) {
+                    grassEncounters.push({ level, pokemon });
+                } else if (parsingWater) {
+                    waterEncounters.push({ level, pokemon });
+                }
             }
         }
     });
@@ -177,13 +184,16 @@ async function searchPokemon() {
                     parsingWater = false;
                 } else if (line.startsWith("db") && (parsingGrass || parsingWater)) {
                     const parts = line.split(",");
-                    const level = parts[0].split(" ")[1].trim();
-                    const pokemon = parts[1].split(";")[0].trim().toUpperCase();
+                    const levelMatch = parts[0].match(/\d+/);
+                    const level = levelMatch ? levelMatch[0].trim() : null;
+                    const pokemon = parts[1] ? parts[1].split(";")[0].trim().toUpperCase() : null;
 
-                    if (parsingGrass) {
-                        grassEncounters.push({ level, pokemon });
-                    } else if (parsingWater) {
-                        waterEncounters.push({ level, pokemon });
+                    if (level && pokemon) {
+                        if (parsingGrass) {
+                            grassEncounters.push({ level, pokemon });
+                        } else if (parsingWater) {
+                            waterEncounters.push({ level, pokemon });
+                        }
                     }
                 }
             });
@@ -226,7 +236,6 @@ async function searchPokemon() {
         alert("Failed to search. Please check console for details.");
     }
 }
-
 
 // Ensure DOM elements are ready before executing script
 window.onload = function() {
