@@ -1,7 +1,16 @@
+// Predefined encounter rate sequence
+const encounterRateSequence = [51, 51, 39, 25, 25, 25, 13, 10, 10, 3, 1, 1, 1, 1];
+
+// Function to calculate percentage
+function calculatePercentage(rate) {
+    const total = encounterRateSequence.reduce((acc, curr) => acc + curr, 0);
+    return (rate / total) * 100;
+}
+
 // Function to load the map index from the mapIndex.json file in the root folder
 async function loadMapList() {
     console.log("Fetching map list from mapIndex.json...");
-    
+
     try {
         const response = await fetch("mapIndex.json");
         if (!response.ok) {
@@ -102,14 +111,14 @@ function displayEncounters(resultArea, encounterType, encounters) {
 
     encounters.forEach((encounter, index) => {
         const encounterRate = calculateEncounterRate(index + 1);
-        resultArea.innerHTML += `<p>Level ${encounter.level} - ${encounter.pokemon} (${encounterRate}%)</p>`;
+        const percentage = calculatePercentage(encounterRate);
+        resultArea.innerHTML += `<p>Level ${encounter.level} - ${encounter.pokemon} (${percentage.toFixed(2)}%)</p>`;
     });
 }
 
-// Function to calculate encounter rate based on the encounter index (same logic as before)
+// Function to calculate encounter rate based on the encounter index
 function calculateEncounterRate(index) {
-    const encounterRates = [51, 51, 39, 25, 25, 25, 13, 10, 10, 3, 1, 1, 1, 1];  // Predefined sequence
-    return encounterRates[index - 1] || 0;  // Return 0 if out of bounds
+    return encounterRateSequence[index - 1] || 0;  // Return 0 if out of bounds
 }
 
 // Function to handle the search for a specific Pokémon across all maps
@@ -144,14 +153,16 @@ async function searchPokemon() {
             let foundInMap = false;
             const lines = mapData.split("\n");
 
-            lines.forEach(line => {
+            lines.forEach((line, idx) => {
                 if (line.includes(searchTerm)) {
                     if (!foundInMap) {
                         resultArea.innerHTML += `<h3>Map: ${mapName.replace(".asm", "")}</h3>`;
                         foundInMap = true;
                         foundAny = true;
                     }
-                    resultArea.innerHTML += `<p>${line.trim()}</p>`;
+                    const encounterRate = calculateEncounterRate(idx + 1);
+                    const percentage = calculatePercentage(encounterRate);
+                    resultArea.innerHTML += `<p>${line.trim()} (Rate: ${percentage.toFixed(2)}%)</p>`;
                 }
             });
         }
