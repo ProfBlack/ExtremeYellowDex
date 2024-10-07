@@ -3,27 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extreme Yellow Dex</title>
+    <title>Pokémon Encounter Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #result {
+            white-space: pre-wrap;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ccc;
+            height: 600px; /* Increased height */
+            overflow-y: scroll;
+        }
+    </style>
 </head>
 <body>
-
     <h1>Pokémon Encounter Search</h1>
 
     <label for="mapSelect">Select a Map:</label>
-    <select id="mapSelect" onchange="loadMap()">
-        <option>Select a map</option>
-    </select>
+    <select id="mapSelect" onchange="loadMap()"></select>
 
     <br><br>
 
-    <label for="searchInput">Search Pokémon:</label>
+    <label for="searchInput">Search for Pokémon:</label>
     <input type="text" id="searchInput">
     <button onclick="searchPokemon()">Search</button>
 
-    <pre id="result"></pre>
+    <br><br>
 
-    <!-- Make sure script.js is correctly loaded here -->
+    <h3>Encounter Data:</h3>
+    <div id="result"></div>
+
     <script src="script.js"></script>
-
 </body>
 </html>
