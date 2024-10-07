@@ -27,6 +27,8 @@ async function loadMapFiles() {
         }
 
         const mapSelect = document.getElementById("mapDropdown");
+        console.log("mapDropdown element:", mapSelect);  // Check if mapDropdown is found
+
         if (!mapSelect) {
             console.error("mapDropdown element not found!");
             return;
@@ -182,15 +184,22 @@ async function searchPokemon() {
 }
 
 // Ensure DOM elements are ready before executing script
-document.addEventListener("DOMContentLoaded", function() {
+window.onload = function() {
     // Load the map list when the page loads
     loadMapFiles();
 
     // Event listeners for dropdown selection and search button
-    document.getElementById("mapDropdown").addEventListener("change", function() {
-        const selectedMap = this.value;
-        loadMap(selectedMap);
-    });
+    const mapDropdownElement = document.getElementById("mapDropdown");
+    console.log("mapDropdownElement at onload:", mapDropdownElement);  // Check if mapDropdown is found on window.onload
+    if (mapDropdownElement) {
+        mapDropdownElement.addEventListener("change", function() {
+            const selectedMap = this.value;
+            loadMap(selectedMap);
+        });
+    } else {
+        console.error("Dropdown element not found in window.onload");
+    }
 
-    document.getElementById("searchButton").addEventListener("click", searchPokemon);
-});
+    const searchButtonElement = document.getElementById("searchButton");
+    searchButtonElement.addEventListener("click", searchPokemon);
+};
