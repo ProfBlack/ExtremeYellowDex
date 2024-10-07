@@ -1,173 +1,177 @@
-const mapSelect = document.getElementById('mapSelect');
-const resultContainer = document.getElementById('result');
-
-// Base URL of the external GitHub repository containing the map files (update this to your repo)
-const baseUrl = 'https://raw.githubusercontent.com/yourusername/yourrepository/main/maps/';
-
-// Manually define the array of map filenames (adjust according to your maps folder)
-const mapFiles = [
-    'CeladonCity.asm',
-    'CeruleanCave.asm',
-    'CeruleanCity.asm',
-    // Add more map filenames here
-];
-
-// Encounter rate sequence (hardcoded)
-const encounterRateSequence = [51, 51, 39, 25, 25, 25, 13, 10, 10, 3, 1, 1, 1];
-
-// Load map files into dropdown on page load
-function loadMapFiles() {
-    mapFiles.forEach(mapFile => {
-        const option = document.createElement('option');
-        option.value = mapFile;
-        option.text = mapFile.replace('.asm', '');
-        mapSelect.appendChild(option);
-    });
-}
-
-// Fetch and parse map data
-async function fetchMapData(mapFile) {
-    const url = `${baseUrl}${mapFile}`;
-    console.log(`Fetching map data from: ${url}`);
-
+// Function to load the map index from the mapIndex.json file in the root folder
+async function loadMapList() {
+    console.log("Fetching map list from mapIndex.json...");
+    
     try {
-        const response = await fetch(url);
-        const data = await response.text();
-        return parseAsmFile(data);
+        const response = await fetch("mapIndex.json");
+        if (!response.ok) {
+            throw new Error(`Failed to load map index: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const mapList = data.maps;
+        console.log("Maps found: ", mapList);
+
+        if (mapList.length === 0) {
+            console.log("No .asm files found!");
+            alert("No .asm files found in the maps folder.");
+            return;
+        }
+
+        // Populate the dropdown with the map names (remove ".asm" extension)
+        const mapDropdown = document.getElementById("mapDropdown");
+        mapDropdown.innerHTML = "";  // Clear existing options
+        mapList.forEach(map => {
+            const option = document.createElement("option");
+            option.text = map.replace(".asm", "");
+            option.value = map;
+            mapDropdown.add(option);
+        });
+
+        // Automatically load the first map when the page loads
+        loadMap(mapList[0]);
     } catch (error) {
-        console.error('Error fetching map data:', error);
-        return null;
+        console.error("Error loading map index:", error);
+        alert("Failed to load map list. Please check console for details.");
     }
 }
 
-// Parse the ASM file content and extract encounters
-function parseAsmFile(data) {
-    const encounterData = { grass: [], water: [] };
-    const lines = data.split('\n');
+// Function to load and display data from a specific .asm map file
+async function loadMap(mapName) {
+    console.log(`Loading map: ${mapName}...`);
 
+    try {
+        const response = await fetch(`maps/${mapName}`);
+        if (!response.ok) {
+            throw new Error(`Failed to load map: ${response.statusText}`);
+        }
+        const mapData = await response.text();
+        parseMapData(mapName, mapData);
+    } catch (error) {
+        console.error("Error loading map file:", error);
+        alert(`Failed to load map file: ${mapName}. Please check console for details.`);
+    }
+}
+
+// Function to parse the map data and display it in the result area
+function parseMapData(mapName, mapData) {
+    const resultArea = document.getElementById("resultArea");
+    resultArea.innerHTML = `<h2>Map: ${mapName.replace(".asm", "")}</h2>`;
+    
+    const grassEncounters = [];
+    const waterEncounters = [];
     let parsingGrass = false;
     let parsingWater = false;
 
-    let encounterIndex = 0;
-
+    const lines = mapData.split("\n");
     lines.forEach(line => {
         line = line.trim();
-
-        if (line.includes('def_grass_wildmons')) {
+        if (line.includes("def_grass_wildmons")) {
             parsingGrass = true;
             parsingWater = false;
-            encounterIndex = 0;
-        } else if (line.includes('def_water_wildmons')) {
+        } else if (line.includes("def_water_wildmons")) {
             parsingGrass = false;
             parsingWater = true;
-            encounterIndex = 0;
-        } else if (line.includes('end_grass_wildmons') || line.includes('end_water_wildmons')) {
+        } else if (line.includes("end_grass_wildmons") || line.includes("end_water_wildmons")) {
             parsingGrass = false;
             parsingWater = false;
-        } else if (line.startsWith('db') && (parsingGrass || parsingWater)) {
-            try {
-                const parts = line.split(',');
-                const level = parts[0].split()[1];
-                const pokemon = parts[1].split(';')[0].trim();
-                const encounterRate = encounterRateSequence[encounterIndex] || 0; // Apply encounter rate
+        } else if (line.startsWith("db") && (parsingGrass || parsingWater)) {
+            const parts = line.split(",");
+            const level = parts[0].split(" ")[1].trim();
+            const pokemon = parts[1].split(";")[0].trim();
 
-                if (parsingGrass) {
-                    encounterData.grass.push({ level, pokemon, encounterRate });
-                } else if (parsingWater) {
-                    encounterData.water.push({ level, pokemon, encounterRate });
-                }
-
-                encounterIndex++; // Move to the next rate in the sequence
-            } catch (error) {
-                console.log(`Error parsing line: ${line}. Error: ${error}`);
+            if (parsingGrass) {
+                grassEncounters.push({ level, pokemon });
+            } else if (parsingWater) {
+                waterEncounters.push({ level, pokemon });
             }
         }
     });
 
-    return encounterData;
+    displayEncounters(resultArea, "Grass", grassEncounters);
+    displayEncounters(resultArea, "Water", waterEncounters);
 }
 
-// Display the selected map's encounters
-function loadMap() {
-    const selectedMap = mapSelect.value;
-    console.log(`Selected map: ${selectedMap}`);
+// Function to display encounters in the result area
+function displayEncounters(resultArea, encounterType, encounters) {
+    resultArea.innerHTML += `<h3>${encounterType} Encounters</h3>`;
+    
+    if (encounters.length === 0) {
+        resultArea.innerHTML += `<p>No ${encounterType.toLowerCase()} encounters found.</p>`;
+        return;
+    }
 
-    resultContainer.innerHTML = 'Loading...';
-
-    fetchMapData(selectedMap).then(data => {
-        if (data) {
-            resultContainer.innerHTML = `Map: ${selectedMap.replace('.asm', '')}\n\nGrass Encounters:\n`;
-
-            if (data.grass.length > 0) {
-                data.grass.forEach(encounter => {
-                    resultContainer.innerHTML += `Level ${encounter.level} - ${encounter.pokemon} - ${encounter.encounterRate}%\n`;
-                });
-            } else {
-                resultContainer.innerHTML += 'No grass encounters found.\n';
-            }
-
-            resultContainer.innerHTML += '\nWater Encounters:\n';
-            if (data.water.length > 0) {
-                data.water.forEach(encounter => {
-                    resultContainer.innerHTML += `Level ${encounter.level} - ${encounter.pokemon} - ${encounter.encounterRate}%\n`;
-                });
-            } else {
-                resultContainer.innerHTML += 'No water encounters found.\n';
-            }
-        } else {
-            resultContainer.innerHTML = 'Failed to load map data.';
-        }
-    }).catch(error => {
-        console.error('Error displaying map:', error);
-        resultContainer.innerHTML = 'Error displaying map data.';
+    encounters.forEach((encounter, index) => {
+        const encounterRate = calculateEncounterRate(index + 1);
+        resultArea.innerHTML += `<p>Level ${encounter.level} - ${encounter.pokemon} (${encounterRate}%)</p>`;
     });
 }
 
-// Search for a Pokémon in all maps
+// Function to calculate encounter rate based on the encounter index (same logic as before)
+function calculateEncounterRate(index) {
+    const encounterRates = [51, 51, 39, 25, 25, 25, 13, 10, 10, 3, 1, 1, 1, 1];  // Predefined sequence
+    return encounterRates[index - 1] || 0;  // Return 0 if out of bounds
+}
+
+// Function to handle the search for a specific Pokémon across all maps
 async function searchPokemon() {
-    const searchTerm = document.getElementById('searchInput').value.trim().toUpperCase();
-    console.log('Search Term:', searchTerm);
+    const searchTerm = document.getElementById("searchInput").value.trim().toUpperCase();
+    console.log(`Searching for: ${searchTerm}`);
 
-    resultContainer.innerHTML = 'Searching...';
+    if (!searchTerm) {
+        alert("Please enter a Pokémon name to search for.");
+        return;
+    }
 
-    let foundAny = false;
+    try {
+        const response = await fetch("mapIndex.json");
+        if (!response.ok) {
+            throw new Error(`Failed to load map index: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const mapList = data.maps;
+        const resultArea = document.getElementById("resultArea");
+        resultArea.innerHTML = `<h2>Search Results for: ${searchTerm}</h2>`;
 
-    for (const mapFile of mapFiles) {
-        const data = await fetchMapData(mapFile);
+        let foundAny = false;
 
-        if (data) {
-            let found = false;
+        for (const mapName of mapList) {
+            const mapResponse = await fetch(`maps/${mapName}`);
+            if (!mapResponse.ok) {
+                throw new Error(`Failed to load map: ${mapName}`);
+            }
+            const mapData = await mapResponse.text();
 
-            // Search in grass encounters
-            data.grass.forEach(encounter => {
-                if (encounter.pokemon.toUpperCase().includes(searchTerm)) {
-                    if (!found) {
-                        resultContainer.innerHTML += `\nMap: ${mapFile.replace('.asm', '')}\n`;
-                        found = true;
+            let foundInMap = false;
+            const lines = mapData.split("\n");
+
+            lines.forEach(line => {
+                if (line.includes(searchTerm)) {
+                    if (!foundInMap) {
+                        resultArea.innerHTML += `<h3>Map: ${mapName.replace(".asm", "")}</h3>`;
+                        foundInMap = true;
                         foundAny = true;
                     }
-                    resultContainer.innerHTML += `Grass - Level ${encounter.level} - ${encounter.pokemon} - ${encounter.encounterRate}%\n`;
-                }
-            });
-
-            // Search in water encounters
-            data.water.forEach(encounter => {
-                if (encounter.pokemon.toUpperCase().includes(searchTerm)) {
-                    if (!found) {
-                        resultContainer.innerHTML += `\nMap: ${mapFile.replace('.asm', '')}\n`;
-                        found = true;
-                        foundAny = true;
-                    }
-                    resultContainer.innerHTML += `Water - Level ${encounter.level} - ${encounter.pokemon} - ${encounter.encounterRate}%\n`;
+                    resultArea.innerHTML += `<p>${line.trim()}</p>`;
                 }
             });
         }
-    }
 
-    if (!foundAny) {
-        resultContainer.innerHTML = `No encounters found for Pokémon: ${searchTerm}`;
+        if (!foundAny) {
+            resultArea.innerHTML += "<p>No Pokémon found matching your search term.</p>";
+        }
+    } catch (error) {
+        console.error("Error during search:", error);
+        alert("Failed to search. Please check console for details.");
     }
 }
 
-// Load map files when the page is loaded
-window.onload = loadMapFiles;
+// Event listeners for dropdown selection and search button
+document.getElementById("mapDropdown").addEventListener("change", function() {
+    const selectedMap = this.value;
+    loadMap(selectedMap);
+});
+
+document.getElementById("searchButton").addEventListener("click", searchPokemon);
+
+// Load the map list when the page loads
+window.onload = loadMapList;
