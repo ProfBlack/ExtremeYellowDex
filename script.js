@@ -8,7 +8,7 @@ function calculatePercentage(rate) {
 }
 
 // Function to load the map index from the mapIndex.json file in the root folder
-async function loadMapList() {
+async function loadMapFiles() {
     console.log("Fetching map list from mapIndex.json...");
 
     try {
@@ -26,14 +26,19 @@ async function loadMapList() {
             return;
         }
 
+        const mapSelect = document.getElementById("mapDropdown");
+        if (!mapSelect) {
+            console.error("mapDropdown element not found!");
+            return;
+        }
+
         // Populate the dropdown with the map names (remove ".asm" extension)
-        const mapDropdown = document.getElementById("mapDropdown");
-        mapDropdown.innerHTML = "";  // Clear existing options
+        mapSelect.innerHTML = "";  // Clear existing options
         mapList.forEach(map => {
             const option = document.createElement("option");
             option.text = map.replace(".asm", "");
             option.value = map;
-            mapDropdown.add(option);
+            mapSelect.add(option);
         });
 
         // Automatically load the first map when the page loads
@@ -176,13 +181,16 @@ async function searchPokemon() {
     }
 }
 
-// Event listeners for dropdown selection and search button
-document.getElementById("mapDropdown").addEventListener("change", function() {
-    const selectedMap = this.value;
-    loadMap(selectedMap);
+// Ensure DOM elements are ready before executing script
+document.addEventListener("DOMContentLoaded", function() {
+    // Load the map list when the page loads
+    loadMapFiles();
+
+    // Event listeners for dropdown selection and search button
+    document.getElementById("mapDropdown").addEventListener("change", function() {
+        const selectedMap = this.value;
+        loadMap(selectedMap);
+    });
+
+    document.getElementById("searchButton").addEventListener("click", searchPokemon);
 });
-
-document.getElementById("searchButton").addEventListener("click", searchPokemon);
-
-// Load the map list when the page loads
-window.onload = loadMapList;
