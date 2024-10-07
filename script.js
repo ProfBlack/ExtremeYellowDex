@@ -1,15 +1,15 @@
 const mapSelect = document.getElementById('mapSelect');
 const resultContainer = document.getElementById('result');
 
-// Base URL of the external GitHub repository containing the map files
-const baseUrl = 'https://raw.githubusercontent.com/RainbowMetalPigeon/ExtremeYellow/main/data/wild/maps/';
+// Base URL of the external GitHub repository containing the map files (update this to your repo)
+const baseUrl = 'https://raw.githubusercontent.com/yourusername/yourrepository/main/maps/';
 
-// Array of map filenames
+// Manually define the array of map filenames (adjust according to your maps folder)
 const mapFiles = [
     'CeladonCity.asm',
     'CeruleanCave.asm',
     'CeruleanCity.asm',
-    // Add other map filenames here
+    // Add more map filenames here
 ];
 
 // Encounter rate sequence (hardcoded)
