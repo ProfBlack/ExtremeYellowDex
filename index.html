@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Encounter Search</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Pokémon Encounter Search</h1>
+
+    <!-- Input for selecting map file -->
+    <label for="map-select">Enter Map Name:</label>
+    <input type="text" id="map-select" placeholder="Enter Map Name (e.g., CeladonCityWildMons)">
+    <button onclick="fetchEncounters()">Get Encounters</button>
+
+    <!-- Display results -->
+    <h3>Encounter Data</h3>
+    <pre id="output"></pre>
+
+    <script src="script.js"></script>
+</body>
+</html>
